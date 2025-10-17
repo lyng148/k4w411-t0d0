@@ -1,0 +1,281 @@
+:root {
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: #5a5a5a;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  -webkit-app-region: drag;
+  /* Make entire window draggable */
+}
+
+#app {
+  max-width: 600px;
+  max-height: 90vh;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  -webkit-app-region: no-drag;
+  /* Allow interactions inside app */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.title-bar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+#close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #ffb6c1;
+  color: white;
+  font-size: 1.5em;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s;
+}
+
+#close-btn:hover {
+  background-color: #ff69b4;
+}
+
+h1 {
+  font-size: 2.5em;
+  color: #ff69b4;
+  margin-bottom: 1rem;
+}
+
+.wow-icon {
+  width: 1.5em;
+  height: 1.5em;
+  vertical-align: middle;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-10px);
+  }
+
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.add-task {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.repeat-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9em;
+  color: #ff69b4;
+  cursor: pointer;
+}
+
+.repeat-checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  transform: scale(1.1);
+}
+
+.repeat-checkbox-label span {
+  user-select: none;
+}
+
+#task-input {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #ffb6c1;
+  border-radius: 25px;
+  font-size: 1em;
+  outline: none;
+}
+
+#task-input:focus {
+  border-color: #ff69b4;
+}
+
+button {
+  border-radius: 25px;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1em;
+  font-family: inherit;
+  background-color: #ffb6c1;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #ff69b4;
+}
+
+#task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
+}
+
+/* Custom scrollbar for cute look */
+#task-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+#task-list::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 10px;
+}
+
+#task-list::-webkit-scrollbar-thumb {
+  background: #ffb6c1;
+  border-radius: 10px;
+}
+
+#task-list::-webkit-scrollbar-thumb:hover {
+  background: #ff69b4;
+}
+
+#task-list li {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+#task-list li.completed .task-text {
+  text-decoration: line-through;
+  color: #ccc;
+}
+
+.task-checkbox {
+  margin-right: 10px;
+  transform: scale(1.2);
+}
+
+.task-text {
+  flex: 1;
+  text-align: left;
+}
+
+.edit-input {
+  flex: 1;
+  padding: 5px;
+  border: 2px solid #ffb6c1;
+  border-radius: 10px;
+  font-size: 1em;
+  outline: none;
+  font-family: inherit;
+}
+
+.edit-input:focus {
+  border-color: #ff69b4;
+}
+
+.repeat-icon {
+  font-size: 1.2em;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.edit-btn {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: #9b87f5;
+  margin-left: 10px;
+  padding: 5px;
+}
+
+.edit-btn iconify-icon {
+  width: 1em;
+  height: 1em;
+}
+
+.edit-btn:hover {
+  background: rgba(155, 135, 245, 0.16);
+  border-radius: 8px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: #ff69b4;
+  margin-left: 10px;
+}
+
+.delete-btn iconify-icon {
+  width: 1em;
+  height: 1em;
+}
+
+.delete-btn:hover {
+  color: #ffffff;
+}
+
+/* add a subtle hover background so white icon remains visible on light cards */
+.delete-btn:focus,
+.delete-btn:hover {
+  background: rgba(255, 105, 180, 0.16);
+  /* pastel pink translucent */
+  border-radius: 8px;
+}
