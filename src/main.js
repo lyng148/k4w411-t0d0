@@ -1,48 +1,184 @@
 import './style.css'
 
-document.querySelector('#app').innerHTML = `
-  <div class="todo-app">
-    <div class="title-bar">
-      <button id="close-btn">×</button>
-    </div>
-    <h1><iconify-icon icon="fluent-emoji:rabbit-face" class="wow-icon"></iconify-icon> Todo List <iconify-icon icon="fluent-emoji:bear" class="wow-icon"></iconify-icon></h1>
-    <div class="add-task">
-      <input type="text" id="task-input" placeholder="Add a new task..." />
-      <label class="repeat-checkbox-label">
-        <input type="checkbox" id="repeat-daily-checkbox" />
-        <span>Lặp lại hàng ngày</span>
-      </label>
-      <button id="add-btn">Add</button>
-    </div>
-    <ul id="task-list"></ul>
-  </div>
-`
+// API endpoint
+const API_URL = 'https://k4w411-t0d0-be.vercel.app';
+let currentUser = localStorage.getItem('todoUsername');
 
-// Close button functionality
-const closeBtn = document.getElementById('close-btn');
-if (typeof window.require !== 'undefined') {
-  const { ipcRenderer } = window.require('electron');
-  closeBtn.addEventListener('click', () => {
-    ipcRenderer.send('close-app');
-  });
+// Kiểm tra xem đã có user chưa
+if (!currentUser) {
+  showLoginScreen();
 } else {
-  closeBtn.style.display = 'none'; // Hide if not in Electron
+  showTodoApp();
 }
 
-const taskInput = document.getElementById('task-input');
-const addBtn = document.getElementById('add-btn');
-const taskList = document.getElementById('task-list');
-const repeatDailyCheckbox = document.getElementById('repeat-daily-checkbox');
+function showLoginScreen() {
+  document.querySelector('#app').innerHTML = `
+    <div class="login-screen">
+      <div class="title-bar">
+        <button id="close-btn">×</button>
+      </div>
+      <h1><iconify-icon icon="fluent-emoji:rabbit-face" class="wow-icon"></iconify-icon> Welcome! <iconify-icon icon="fluent-emoji:bear" class="wow-icon"></iconify-icon></h1>
+      <div class="login-form">
+        <input type="text" id="username-input" placeholder="Enter your username..." />
+        <button id="login-btn">Start</button>
+      </div>
+    </div>
+  `;
 
-// Load tasks from localStorage when app starts
-loadTasks();
+  setupCloseButton();
 
-addBtn.addEventListener('click', () => addTask());
-taskInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') addTask();
-});
+  const usernameInput = document.getElementById('username-input');
+  const loginBtn = document.getElementById('login-btn');
+
+  const handleLogin = async () => {
+    const username = usernameInput.value.trim();
+    if (username === '') {
+      alert('Please enter a username!');
+      return;
+    }
+
+    currentUser = username;
+    localStorage.setItem('todoUsername', username);
+
+    // Fetch tasks from server
+    await fetchTasksFromServer();
+
+    showTodoApp();
+  };
+
+  loginBtn.addEventListener('click', handleLogin);
+  usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+}
+
+function showTodoApp() {
+  document.querySelector('#app').innerHTML = `
+    <div class="todo-app">
+      <div class="title-bar">
+        <button id="logout-btn" title="Change user">👤</button>
+        <button id="close-btn">×</button>
+      </div>
+      <h1><iconify-icon icon="fluent-emoji:rabbit-face" class="wow-icon"></iconify-icon> ${currentUser}'s Todo <iconify-icon icon="fluent-emoji:bear" class="wow-icon"></iconify-icon></h1>
+      <div class="add-task">
+        <input type="text" id="task-input" placeholder="Add a new task..." />
+        <label class="repeat-checkbox-label">
+          <input type="checkbox" id="repeat-daily-checkbox" />
+          <span>REPEAT</span>
+        </label>
+        <button id="add-btn">Add</button>
+      </div>
+      <ul id="task-list"></ul>
+    </div>
+  `;
+
+  setupCloseButton();
+  setupLogoutButton();
+  initializeTodoApp();
+}
+
+
+function setupCloseButton() {
+  const closeBtn = document.getElementById('close-btn');
+  if (typeof window.require !== 'undefined') {
+    const { ipcRenderer } = window.require('electron');
+    closeBtn.addEventListener('click', () => {
+      ipcRenderer.send('close-app');
+    });
+  } else {
+    closeBtn.style.display = 'none';
+  }
+}
+
+function setupLogoutButton() {
+  const logoutBtn = document.getElementById('logout-btn');
+  logoutBtn.addEventListener('click', () => {
+    if (confirm('Do you want to change user?')) {
+      currentUser = null;
+      localStorage.removeItem('todoUsername');
+      showLoginScreen();
+    }
+  });
+}
+
+async function fetchTasksFromServer() {
+  try {
+    const response = await fetch(`${API_URL}/${currentUser}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.listTask && Array.isArray(data.listTask)) {
+        // Lưu tasks vào localStorage
+        const tasks = data.listTask.map(task => ({
+          text: task.content,
+          completed: task.isDone,
+          repeatDaily: task.isRepeated
+        }));
+        localStorage.setItem('todoTasks', JSON.stringify(tasks));
+        localStorage.setItem('lastSaveDate', getCurrentDate());
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching tasks from server:', error);
+  }
+}
+
+async function syncTasksToServer() {
+  const tasks = [];
+  const taskItems = document.querySelectorAll('#task-list li');
+
+  taskItems.forEach(li => {
+    const taskText = li.querySelector('.task-text')?.textContent || '';
+    const isCompleted = li.querySelector('.task-checkbox')?.checked || false;
+    const isRepeatDaily = li.dataset.repeatDaily === 'true';
+
+    tasks.push({
+      content: taskText,
+      isDone: isCompleted,
+      isRepeated: isRepeatDaily
+    });
+  });
+
+  const payload = {
+    user: currentUser,
+    listTask: tasks
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      console.error('Failed to sync tasks to server');
+    }
+  } catch (error) {
+    console.error('Error syncing tasks to server:', error);
+  }
+}
+
+function initializeTodoApp() {
+  const taskInput = document.getElementById('task-input');
+  const addBtn = document.getElementById('add-btn');
+  const repeatDailyCheckbox = document.getElementById('repeat-daily-checkbox');
+
+  // Load tasks from localStorage when app starts
+  loadTasks();
+
+  addBtn.addEventListener('click', () => addTask());
+  taskInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addTask();
+  });
+}
 
 function addTask(taskText = null, isRepeatDaily = null, isCompleted = false, shouldSave = true) {
+  const taskInput = document.getElementById('task-input');
+  const repeatDailyCheckbox = document.getElementById('repeat-daily-checkbox');
+  const taskList = document.getElementById('task-list');
+
   // Nếu không truyền tham số, lấy từ input
   if (taskText === null) {
     taskText = taskInput.value.trim();
@@ -55,8 +191,8 @@ function addTask(taskText = null, isRepeatDaily = null, isCompleted = false, sho
     <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''}>
     <span class="task-text">${taskText}</span>
     ${isRepeatDaily ? '<iconify-icon icon="fluent-emoji:repeat-button" class="repeat-icon" title="Lặp lại hàng ngày"></iconify-icon>' : ''}
-    <button class="edit-btn"><iconify-icon icon="mingcute:edit-line" style="color: #9b87f5;"></iconify-icon></button>
-    <button class="delete-btn"><iconify-icon icon="iconoir:trash" style="color: #ff69b4;"></iconify-icon></button>
+    <button class="edit-btn"><iconify-icon icon="mingcute:edit-line"></iconify-icon></button>
+    <button class="delete-btn"><iconify-icon icon="iconoir:trash"></iconify-icon></button>
   `;
 
   if (isRepeatDaily) {
@@ -81,18 +217,14 @@ function addTask(taskText = null, isRepeatDaily = null, isCompleted = false, sho
 
   checkbox.addEventListener('change', () => {
     li.classList.toggle('completed');
-    saveTasks(); // Lưu khi thay đổi trạng thái
+    saveTasks();
   });
 
   editBtn.addEventListener('click', () => {
-    // Tìm lại task-text hoặc edit-input mỗi lần click
     const taskTextSpan = li.querySelector('.task-text');
     const existingInput = li.querySelector('.edit-input');
 
-    // Nếu đang edit rồi thì không làm gì
     if (existingInput) return;
-
-    // Nếu không tìm thấy task-text thì return
     if (!taskTextSpan) return;
 
     const currentText = taskTextSpan.textContent;
@@ -110,7 +242,7 @@ function addTask(taskText = null, isRepeatDaily = null, isCompleted = false, sho
       newSpan.className = 'task-text';
       newSpan.textContent = newText !== '' ? newText : currentText;
       input.replaceWith(newSpan);
-      saveTasks(); // Lưu sau khi sửa
+      saveTasks();
     };
 
     input.addEventListener('blur', saveEdit);
@@ -123,7 +255,7 @@ function addTask(taskText = null, isRepeatDaily = null, isCompleted = false, sho
 
   deleteBtn.addEventListener('click', () => {
     li.remove();
-    saveTasks(); // Lưu sau khi xóa
+    saveTasks();
   });
 
   // Lưu task nếu shouldSave = true (tức là task mới từ UI)
@@ -133,6 +265,7 @@ function addTask(taskText = null, isRepeatDaily = null, isCompleted = false, sho
 }
 
 function saveTasks() {
+  const taskList = document.getElementById('task-list');
   const tasks = [];
   const taskItems = taskList.querySelectorAll('li');
 
@@ -150,6 +283,9 @@ function saveTasks() {
 
   localStorage.setItem('todoTasks', JSON.stringify(tasks));
   localStorage.setItem('lastSaveDate', getCurrentDate());
+
+  // Sync to server
+  syncTasksToServer();
 }
 
 function loadTasks() {
