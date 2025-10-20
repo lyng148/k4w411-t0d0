@@ -1,0 +1,42 @@
+{
+    "name": "Cute Todo List",
+    "short_name": "Todo",
+    "description": "A cute todo list app with bunny and bear icons",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FFB3D9",
+    "theme_color": "#FF69B4",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "productivity",
+        "utilities"
+    ],
+    "shortcuts": [
+        {
+            "name": "Add Task",
+            "short_name": "Add",
+            "description": "Add a new task",
+            "url": "/",
+            "icons": [
+                {
+                    "src": "/icon.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}

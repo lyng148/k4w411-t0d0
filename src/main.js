@@ -1,5 +1,18 @@
 import './style.css'
 
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('ServiceWorker registered:', registration);
+      })
+      .catch((error) => {
+        console.log('ServiceWorker registration failed:', error);
+      });
+  });
+}
+
 // API endpoint
 const API_URL = 'https://k4w411-t0d0-be.vercel.app';
 let currentUser = localStorage.getItem('todoUsername');
