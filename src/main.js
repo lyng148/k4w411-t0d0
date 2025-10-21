@@ -1,8 +1,10 @@
 import './style.css'
 
-// Detect environment and apply body class
+// Detect environment and apply class to both html and body
 const isElectron = typeof window.require !== 'undefined';
-document.body.classList.add(isElectron ? 'is-electron' : 'is-web');
+const className = isElectron ? 'is-electron' : 'is-web';
+document.documentElement.classList.add(className);
+document.body.classList.add(className);
 
 // Register Service Worker for PWA (only in web mode)
 if ('serviceWorker' in navigator && !isElectron) {
