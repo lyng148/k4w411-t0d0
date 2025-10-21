@@ -39,8 +39,21 @@ body.is-electron {
 
 /* Wallpaper background for Web */
 body.is-web {
-  background: url('/wallpaper.jpg') center center / cover no-repeat fixed;
-  /* Fallback color */
+  background-image: url('/wallpaper.jpg');
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  /* iOS có vấn đề với fixed */
+}
+
+/* Override cho iOS để đảm bảo background hiển thị */
+@supports (-webkit-touch-callout: none) {
+  body.is-web {
+    background-attachment: scroll;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
 }
 
 body {
