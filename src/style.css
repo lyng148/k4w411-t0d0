@@ -22,7 +22,6 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: transparent !important;
   overflow: hidden;
   /* iOS Full Screen Support */
   width: 100vw;
@@ -31,6 +30,18 @@ body {
   position: fixed;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Transparent background for Electron */
+body.is-electron {
+  background: transparent !important;
+}
+
+/* Wallpaper background for Web */
+body.is-web {
+  background: url('/wallpaper.jpg') center center / cover no-repeat fixed;
+  background-color: #FFB3D9;
+  /* Fallback color */
 }
 
 body {

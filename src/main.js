@@ -1,7 +1,11 @@
 import './style.css'
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
+// Detect environment and apply body class
+const isElectron = typeof window.require !== 'undefined';
+document.body.classList.add(isElectron ? 'is-electron' : 'is-web');
+
+// Register Service Worker for PWA (only in web mode)
+if ('serviceWorker' in navigator && !isElectron) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
