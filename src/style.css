@@ -112,6 +112,35 @@ body {
   transition: all 0.1s;
 }
 
+#refresh-btn {
+  width: 40px;
+  height: 40px;
+  background-color: #FFFFFF;
+  color: #000000;
+  font-size: 1.2em;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  transition: all 0.1s;
+}
+
+#refresh-btn:hover {
+  background-color: #F0F0F0;
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+#refresh-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #000000;
+}
+
 #logout-btn:hover {
   background-color: #FFC700;
   transform: translate(2px, 2px);

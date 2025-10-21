@@ -69,9 +69,10 @@ function showTodoApp() {
   document.querySelector('#app').innerHTML = `
     <div class="todo-app">
       <div class="title-bar">
-        <button id="logout-btn" title="Change user">👤</button>
-        <button id="close-btn">×</button>
-      </div>
+          <button id="logout-btn" title="Change user">👤</button>
+          <button id="refresh-btn" title="Refresh">🔄</button>
+          <button id="close-btn">×</button>
+        </div>
       <h1><iconify-icon icon="fluent-emoji:rabbit-face" class="wow-icon"></iconify-icon> ${currentUser}'s Todo <iconify-icon icon="fluent-emoji:bear" class="wow-icon"></iconify-icon></h1>
       <div class="add-task">
         <input type="text" id="task-input" placeholder="Add a new task..." />
@@ -87,6 +88,7 @@ function showTodoApp() {
 
   setupCloseButton();
   setupLogoutButton();
+  setupRefreshButton();
   initializeTodoApp();
 }
 
@@ -112,6 +114,35 @@ function setupLogoutButton() {
       showLoginScreen();
     }
   });
+}
+
+function setupRefreshButton() {
+  const refreshBtn = document.getElementById('refresh-btn');
+  if (!refreshBtn) return;
+
+  refreshBtn.addEventListener('click', async () => {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '⏳';
+    try {
+      await fetchTasksFromServer();
+      // Clear current list and reload from localStorage
+      reloadTaskList();
+    } catch (err) {
+      console.error('Refresh failed:', err);
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = '🔄';
+    }
+  });
+}
+
+function reloadTaskList() {
+  const taskList = document.getElementById('task-list');
+  if (!taskList) return;
+  // Clear existing DOM items
+  taskList.innerHTML = '';
+  // Reload from localStorage
+  loadTasks();
 }
 
 async function fetchTasksFromServer() {
