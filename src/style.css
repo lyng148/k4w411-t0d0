@@ -30,30 +30,18 @@ body {
   position: fixed;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
-}
+  /* Default background (web mode) */
 
-/* Transparent background for Electron */
-body.is-electron {
-  background: transparent !important;
-}
-
-/* Wallpaper background for Web */
-body.is-web {
   background-image: url('/wallpaper.jpg');
   background-position: center center;
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: scroll;
-  /* iOS có vấn đề với fixed */
 }
 
-/* Override cho iOS để đảm bảo background hiển thị */
-@supports (-webkit-touch-callout: none) {
-  body.is-web {
-    background-attachment: scroll;
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-  }
+/* Transparent background for Electron - override default */
+body.is-electron {
+  background: transparent !important;
 }
 
 body {
