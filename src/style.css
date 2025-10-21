@@ -40,7 +40,6 @@ body.is-electron {
 /* Wallpaper background for Web */
 body.is-web {
   background: url('/wallpaper.jpg') center center / cover no-repeat fixed;
-  background-color: #FFB3D9;
   /* Fallback color */
 }
 
