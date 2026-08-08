@@ -360,6 +360,11 @@ function showTodoApp() {
 
   loadTasks();
   applySavedSettings();
+
+  // Fetch latest tasks & groups from server on app startup
+  fetchTasksFromServer().then(() => {
+    renderGroupsAndTasks();
+  });
 }
 
 function setupCloseButton() {
