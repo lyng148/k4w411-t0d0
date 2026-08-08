@@ -1250,27 +1250,15 @@ async function fetchTasksFromServer() {
             tags: task.tags || []
           }));
 
-          // Persistent Deletion Protection: Filter out deleted tasks
-          const deletedIds = JSON.parse(localStorage.getItem('todoDeletedTaskIds') || '[]');
-          const filteredServerTasks = serverTasks.filter(st => !deletedIds.includes(st.id));
-
-          // Smart Merge: Merge server tasks with local tasks by ID (excluding deleted ones)
-          const mergedTasks = [...filteredServerTasks];
-          tasks.forEach(localTask => {
-            if (!deletedIds.includes(localTask.id) && !mergedTasks.some(st => st.id === localTask.id)) {
-              mergedTasks.push(localTask);
-            }
-          });
-          tasks = mergedTasks;
+          // Use server tasks directly as ground truth
+          tasks = serverTasks;
 
           if (data.groups && Array.isArray(data.groups) && data.groups.length > 0) {
-            const mergedGroups = [...data.groups];
-            groups.forEach(localGroup => {
-              if (!mergedGroups.some(sg => sg.id === localGroup.id)) {
-                mergedGroups.push(localGroup);
-              }
-            });
-            groups = mergedGroups;
+            groups = data.groups.map(g => ({
+              id: g.id,
+              name: g.name,
+              theme: g.theme || 'purple'
+            }));
           }
 
           localStorage.setItem('todoTasks', JSON.stringify(tasks));
@@ -1289,6 +1277,7 @@ async function fetchTasksFromServer() {
 
 function loadTasks() {
   loadTrash();
+  localStorage.removeItem('todoDeletedTaskIds');
   const savedTasks = localStorage.getItem('todoTasks');
   const savedGroups = localStorage.getItem('todoGroups');
   const lastSaveDate = localStorage.getItem('lastSaveDate');
