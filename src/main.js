@@ -73,7 +73,7 @@ if ('serviceWorker' in navigator && !isElectron) {
 
 // API Endpoint & State
 const API_URL = 'https://k4w411-t0d0-be.vercel.app';
-let currentUser = localStorage.getItem('todoUsername') || 'rin';
+let currentUser = (localStorage.getItem('todoUsername') || 'rin').trim().toLowerCase();
 localStorage.setItem('todoUsername', currentUser);
 
 const DEFAULT_GROUPS = [
@@ -253,23 +253,26 @@ function showLoginScreen() {
   const loginWarning = document.getElementById('login-warning');
 
   const handleLogin = async () => {
-    const username = usernameInput.value.trim();
-    if (username === '') {
+    const rawName = usernameInput.value.trim();
+    if (rawName === '') {
       usernameInput.classList.add('error');
       loginWarning.textContent = 'Vui lòng nhập tên người dùng hợp lệ!';
       setTimeout(() => usernameInput.classList.remove('error'), 500);
       return;
     }
 
+    const username = rawName.toLowerCase();
     currentUser = username;
     localStorage.setItem('todoUsername', username);
+    localStorage.removeItem('todoTasks');
+    localStorage.removeItem('todoGroups');
 
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Đang tải...';
+    loginBtn.textContent = 'Đang tải dữ liệu...';
 
     await fetchTasksFromServer();
     showTodoApp();
-    showToast(`Xin chào, ${username}!`, 'success');
+    showToast(`Xin chào, ${rawName}!`, 'success');
   };
 
   loginBtn.addEventListener('click', handleLogin);
@@ -409,6 +412,19 @@ function showTodoApp() {
   loadTasks();
   loadTrash();
   applySavedSettings();
+
+  const container = document.getElementById('groups-container');
+  if (container && (!tasks || tasks.length === 0)) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: #8C7A6B; font-family: 'Patrick Hand', cursive; font-size: 1.25rem;">
+        <i data-lucide="refresh-cw" class="icon-indigo spinning" style="font-size: 1.6rem; display: inline-block; margin-bottom: 8px;"></i>
+        <div>Đang đồng bộ dữ liệu từ máy chủ...</div>
+      </div>
+    `;
+    renderLucideIcons();
+  } else {
+    renderGroupsAndTasks();
+  }
 
   // Fetch latest tasks & groups from server on app startup
   fetchTasksFromServer().then(() => {
