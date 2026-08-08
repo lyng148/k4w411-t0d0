@@ -292,15 +292,13 @@ html.is-electron {
   background: #E5DDD3;
 }
 
-/* Grid Layout for Sticky Notes (2x2 Grid) */
+/* Multi-Column Layout for Sticky Notes (Allows groups to stack vertically & be placed below each other) */
 .groups-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  align-items: start;
-  gap: 14px;
+  columns: 2 210px;
+  column-gap: 14px;
   padding: 4px;
 }
 
@@ -316,7 +314,7 @@ html.is-electron {
   border-radius: 3px;
 }
 
-/* Sticky Note Section Card - Expands dynamically with content */
+/* Sticky Note Section Card - Expands dynamically with content & avoids break */
 .group-section {
   display: flex;
   flex-direction: column;
@@ -329,6 +327,8 @@ html.is-electron {
   min-height: 160px;
   height: fit-content;
   overflow: hidden;
+  break-inside: avoid;
+  margin-bottom: 14px;
 }
 
 .group-header {
