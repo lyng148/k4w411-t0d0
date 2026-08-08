@@ -5,6 +5,11 @@
   color-scheme: light;
   color: #3E322A;
 
+  /* Custom Easing Curves (Emil Kowalski Design Engineering) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
   /* iOS Safe Area */
   --safe-area-top: env(safe-area-inset-top);
   --safe-area-bottom: env(safe-area-inset-bottom);
@@ -581,16 +586,29 @@ body.is-standalone .floral-bg-bottom {
 .group-theme-rose { background: #F7D6DC !important; border: 1px solid #EEC2C9 !important; }
 
 /* Task Item Card - Aligned precisely with 32px Notebook Lines */
+@keyframes taskEntrance {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .task-card {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 0 4px;
+  padding: 0 54px 0 4px; /* Reserve 54px right padding so buttons never overlap text/tags */
   position: relative;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.16s var(--ease-out), transform 0.16s var(--ease-out);
   min-height: 32px;
   box-sizing: border-box;
+  animation: taskEntrance 220ms var(--ease-out) backwards;
 }
+
+.task-card:nth-child(1) { animation-delay: 20ms; }
+.task-card:nth-child(2) { animation-delay: 60ms; }
+.task-card:nth-child(3) { animation-delay: 100ms; }
+.task-card:nth-child(4) { animation-delay: 140ms; }
+.task-card:nth-child(5) { animation-delay: 180ms; }
+.task-card:nth-child(6) { animation-delay: 220ms; }
 
 .task-card.sortable-ghost {
   opacity: 0.3;
@@ -620,9 +638,13 @@ body.is-standalone .floral-bg-bottom {
   align-items: center;
   justify-content: center;
   outline: none;
-  transition: all 0.15s ease;
+  transition: transform 140ms var(--ease-out), background 140ms var(--ease-out), border-color 140ms var(--ease-out);
   flex-shrink: 0;
   margin-top: 7px;
+}
+
+.task-checkbox-custom:active {
+  transform: scale(0.85);
 }
 
 .task-checkbox-custom:checked {
@@ -685,35 +707,56 @@ body.is-standalone .floral-bg-bottom {
   color: #4A3B32;
 }
 
+/* Action Buttons - PERFECTLY CENTERED ON NOTEBOOK LINE 1 (height: 32px) */
 .task-actions {
-  display: flex;
+  position: absolute;
+  right: 4px;
+  top: 0;
+  height: 32px;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transform: translateX(4px);
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  padding: 2px 4px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(60, 50, 40, 0.12);
 }
 
-.task-card:hover .task-actions {
+.task-card:hover .task-actions,
+.task-card:focus-within .task-actions {
   opacity: 1;
+  transform: translateX(0);
 }
 
 .btn-card-action {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border: none;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
   color: #4A3B32;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  transition: all 0.15s ease;
+  font-size: 0.85rem;
+  transition: transform 120ms var(--ease-out), background 120ms var(--ease-out);
 }
 
-.btn-card-action:hover {
-  background: #FFFFFF;
+.btn-card-action:active {
+  transform: scale(0.92);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-card-action:hover {
+    background: #FFFFFF;
+    transform: scale(1.08);
+  }
 }
 
 /* Modals */
