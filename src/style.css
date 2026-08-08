@@ -751,6 +751,10 @@ body.is-standalone .floral-bg-bottom {
   transition: transform 120ms var(--ease-out), background 120ms var(--ease-out), color 120ms var(--ease-out);
 }
 
+.btn-card-action * {
+  pointer-events: none;
+}
+
 .btn-card-action:active {
   transform: scale(0.9);
 }

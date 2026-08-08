@@ -812,6 +812,10 @@ function createTaskCardElement(task) {
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
 
+    if (!Array.isArray(trashTasks)) {
+      trashTasks = [];
+    }
+
     // 1. Move task to Trash Bin (stored for 7 days)
     const deletedTaskCopy = { ...task, deletedAt: new Date().toISOString() };
     trashTasks.push(deletedTaskCopy);
@@ -1284,6 +1288,7 @@ async function fetchTasksFromServer() {
 }
 
 function loadTasks() {
+  loadTrash();
   const savedTasks = localStorage.getItem('todoTasks');
   const savedGroups = localStorage.getItem('todoGroups');
   const lastSaveDate = localStorage.getItem('lastSaveDate');
