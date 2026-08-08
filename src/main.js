@@ -774,7 +774,13 @@ function createTaskCardElement(task) {
         await fetch(`${API_URL}/${currentUser}/task/${task.id}`, { method: 'DELETE' });
       }
 
-      // 3. Remove locally after backend confirmation
+      // 3. Remove locally after backend confirmation & record deleted ID to prevent resurrection
+      const deletedIds = JSON.parse(localStorage.getItem('todoDeletedTaskIds') || '[]');
+      if (!deletedIds.includes(task.id)) {
+        deletedIds.push(task.id);
+        localStorage.setItem('todoDeletedTaskIds', JSON.stringify(deletedIds));
+      }
+
       tasks = tasks.filter(t => t.id !== task.id);
       saveTasks();
 
@@ -1068,10 +1074,14 @@ async function fetchTasksFromServer() {
             tags: task.tags || []
           }));
 
-          // Smart Merge: Merge server tasks with local tasks by ID
-          const mergedTasks = [...serverTasks];
+          // Persistent Deletion Protection: Filter out deleted tasks
+          const deletedIds = JSON.parse(localStorage.getItem('todoDeletedTaskIds') || '[]');
+          const filteredServerTasks = serverTasks.filter(st => !deletedIds.includes(st.id));
+
+          // Smart Merge: Merge server tasks with local tasks by ID (excluding deleted ones)
+          const mergedTasks = [...filteredServerTasks];
           tasks.forEach(localTask => {
-            if (!mergedTasks.some(st => st.id === localTask.id)) {
+            if (!deletedIds.includes(localTask.id) && !mergedTasks.some(st => st.id === localTask.id)) {
               mergedTasks.push(localTask);
             }
           });
