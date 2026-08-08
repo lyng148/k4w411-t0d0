@@ -777,15 +777,15 @@ function createTaskCardElement(task) {
   li.innerHTML = `
     <input type="checkbox" class="task-checkbox-custom" ${task.completed ? 'checked' : ''} aria-label="Mark task completed">
     <div class="task-content-block">
-      <span class="task-title">${safeText}</span>
       <div class="priority-dot ${priorityClass}" title="Độ ưu tiên: ${priorityClass}"></div>
+      <span class="task-title">${safeText}</span>
     </div>
     ${allPillsHTML ? `<div class="task-tags-row">${allPillsHTML}</div>` : ''}
     <div class="task-actions">
-      <button class="btn-card-action btn-edit-task" title="Sửa">
+      <button class="btn-card-action btn-edit-task" title="Sửa công việc">
         <i data-lucide="pencil" class="icon-indigo"></i>
       </button>
-      <button class="btn-card-action btn-delete-task" title="Xóa">
+      <button class="btn-card-action btn-delete-task" title="Xóa công việc">
         <i data-lucide="trash-2" class="icon-rose"></i>
       </button>
     </div>
@@ -809,55 +809,41 @@ function createTaskCardElement(task) {
     openTaskModal(task);
   });
 
-  deleteBtn.addEventListener('click', async (e) => {
+  deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
 
-    // 1. Show loading state on card
-    li.classList.add('is-deleting');
-    deleteBtn.disabled = true;
-    deleteBtn.innerHTML = '<i data-lucide="refresh-cw" class="icon-rose spinning"></i>';
-    renderLucideIcons();
+    // 1. Move task to Trash Bin (stored for 7 days)
+    const deletedTaskCopy = { ...task, deletedAt: new Date().toISOString() };
+    trashTasks.push(deletedTaskCopy);
+    saveTrash();
 
-    try {
-      // 2. Call backend DELETE API
-      if (currentUser && task.id) {
-        await fetch(`${API_URL}/${currentUser}/task/${task.id}`, { method: 'DELETE' });
+    // 2. Record deleted ID to prevent resurrection
+    const deletedIds = JSON.parse(localStorage.getItem('todoDeletedTaskIds') || '[]');
+    if (!deletedIds.includes(task.id)) {
+      deletedIds.push(task.id);
+      localStorage.setItem('todoDeletedTaskIds', JSON.stringify(deletedIds));
+    }
+
+    // 3. Remove locally from tasks array & save
+    tasks = tasks.filter(t => t.id !== task.id);
+    saveTasks();
+
+    // 4. Animate remove card from DOM immediately
+    li.style.transform = 'scale(0.9)';
+    li.style.opacity = '0';
+    setTimeout(() => {
+      if (standaloneGroupId) {
+        renderStandaloneGroupTasks(standaloneGroupId);
+      } else {
+        renderGroupsAndTasks();
       }
+      showToast('Đã chuyển công việc vào Thùng Rác', 'info');
+    }, 180);
 
-      // 3. Move task to Trash Bin (stored for 7 days)
-      const deletedTaskCopy = { ...task, deletedAt: new Date().toISOString() };
-      trashTasks.push(deletedTaskCopy);
-      saveTrash();
-
-      // 4. Record deleted ID to prevent resurrection
-      const deletedIds = JSON.parse(localStorage.getItem('todoDeletedTaskIds') || '[]');
-      if (!deletedIds.includes(task.id)) {
-        deletedIds.push(task.id);
-        localStorage.setItem('todoDeletedTaskIds', JSON.stringify(deletedIds));
-      }
-
-      tasks = tasks.filter(t => t.id !== task.id);
-      saveTasks();
-
-      // 5. Animate remove card from DOM
-      li.style.transform = 'scale(0.9)';
-      li.style.opacity = '0';
-      setTimeout(() => {
-        if (standaloneGroupId) {
-          renderStandaloneGroupTasks(standaloneGroupId);
-        } else {
-          renderGroupsAndTasks();
-        }
-        showToast('Đã chuyển công việc vào Thùng Rác', 'info');
-      }, 180);
-    } catch (err) {
-      console.error('Error deleting task on server:', err);
-      // Rollback state on failure
-      li.classList.remove('is-deleting');
-      deleteBtn.disabled = false;
-      deleteBtn.innerHTML = '<i data-lucide="trash-2" class="icon-rose"></i>';
-      renderLucideIcons();
-      showToast('Lỗi khi xóa công việc', 'error');
+    // 5. Fire-and-forget async DELETE to backend server with encodeURIComponent
+    if (currentUser && task.id) {
+      fetch(`${API_URL}/${encodeURIComponent(currentUser)}/task/${encodeURIComponent(task.id)}`, { method: 'DELETE' })
+        .catch(err => console.warn('Backend DELETE sync warning (task removed locally):', err));
     }
   });
 

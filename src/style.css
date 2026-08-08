@@ -662,9 +662,9 @@ body.is-standalone .floral-bg-bottom {
 
 .task-content-block {
   flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 6px;
 }
 
@@ -675,14 +675,17 @@ body.is-standalone .floral-bg-bottom {
   line-height: 32px;
   color: #3E322A;
   word-break: break-word;
+  flex: 1;
+  min-width: 0;
 }
 
 .priority-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 12px;
+  margin-top: 0;
+  box-shadow: 0 0 4px rgba(0,0,0,0.12);
 }
 
 .priority-dot.high { background-color: #E55353; }
@@ -707,22 +710,22 @@ body.is-standalone .floral-bg-bottom {
   color: #4A3B32;
 }
 
-/* Action Buttons - PERFECTLY CENTERED ON NOTEBOOK LINE 1 (height: 32px) */
+/* Action Buttons - Sleek Ghost Pill Aligned on Notebook Line 1 */
 .task-actions {
   position: absolute;
   right: 4px;
-  top: 0;
-  height: 32px;
+  top: 2px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   opacity: 0;
   transform: translateX(4px);
   transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
   z-index: 10;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(4px);
-  padding: 2px 4px;
+  background: #FAF7F2;
+  border: 1px solid #E5DCD3;
+  padding: 1px 3px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(60, 50, 40, 0.12);
 }
@@ -734,27 +737,33 @@ body.is-standalone .floral-bg-bottom {
 }
 
 .btn-card-action {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: none;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 6px;
-  color: #4A3B32;
+  background: transparent;
+  border-radius: 5px;
+  color: #5A4B41;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
-  transition: transform 120ms var(--ease-out), background 120ms var(--ease-out);
+  font-size: 0.8rem;
+  transition: transform 120ms var(--ease-out), background 120ms var(--ease-out), color 120ms var(--ease-out);
 }
 
 .btn-card-action:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .btn-card-action:hover {
-    background: #FFFFFF;
+  .btn-edit-task:hover {
+    background: rgba(53, 77, 102, 0.12);
+    color: #354D66;
+    transform: scale(1.08);
+  }
+  .btn-delete-task:hover {
+    background: rgba(229, 83, 83, 0.15);
+    color: #E55353;
     transform: scale(1.08);
   }
 }
