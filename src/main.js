@@ -759,14 +759,44 @@ function createTaskCardElement(task) {
     openTaskModal(task);
   });
 
-  deleteBtn.addEventListener('click', (e) => {
+  deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
-    tasks = tasks.filter(t => t.id !== task.id);
-    saveTasks();
-    if (standaloneGroupId) {
-      renderStandaloneGroupTasks(standaloneGroupId);
-    } else {
-      renderGroupsAndTasks();
+
+    // 1. Show loading state on card
+    li.classList.add('is-deleting');
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<i data-lucide="refresh-cw" class="icon-rose spinning"></i>';
+    renderLucideIcons();
+
+    try {
+      // 2. Call backend DELETE API
+      if (currentUser && task.id) {
+        await fetch(`${API_URL}/${currentUser}/task/${task.id}`, { method: 'DELETE' });
+      }
+
+      // 3. Remove locally after backend confirmation
+      tasks = tasks.filter(t => t.id !== task.id);
+      saveTasks();
+
+      // 4. Animate remove card from DOM
+      li.style.transform = 'scale(0.9)';
+      li.style.opacity = '0';
+      setTimeout(() => {
+        if (standaloneGroupId) {
+          renderStandaloneGroupTasks(standaloneGroupId);
+        } else {
+          renderGroupsAndTasks();
+        }
+        showToast('Đã xóa công việc', 'info');
+      }, 180);
+    } catch (err) {
+      console.error('Error deleting task on server:', err);
+      // Rollback state on failure
+      li.classList.remove('is-deleting');
+      deleteBtn.disabled = false;
+      deleteBtn.innerHTML = '<i data-lucide="trash-2" class="icon-rose"></i>';
+      renderLucideIcons();
+      showToast('Lỗi khi xóa công việc', 'error');
     }
   });
 
