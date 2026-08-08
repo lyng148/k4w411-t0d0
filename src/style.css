@@ -826,11 +826,179 @@ body.is-standalone .floral-bg-bottom {
   justify-content: space-between;
 }
 
-.modal-header h3 {
-  margin: 0;
+/* Trash Bin Badge & Modal Styles */
+.trash-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #E55353;
+  color: #FFFFFF;
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trash-modal-card {
+  max-width: 440px;
+  max-height: 80vh;
+}
+
+.sub-header-note {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #8C7A6B;
+}
+
+.trash-body-scroll {
+  max-height: 55vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.trash-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #EAE0D7;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+
+.trash-item-row:hover {
+  background: #FFFFFF;
+  box-shadow: 0 3px 8px rgba(60, 50, 40, 0.08);
+}
+
+.trash-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.trash-task-title {
+  font-family: 'Mali', 'Patrick Hand', cursive;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3E322A;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.trash-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trash-group-pill {
   font-family: 'Patrick Hand', cursive;
-  font-size: 1.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #EFE8E1;
+  color: #5C4A3E;
+}
+
+.trash-expiry-badge {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 0.7rem;
+  color: #A08C7D;
+}
+
+.trash-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-restore-task {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #EBF3FA;
+  color: #2B5784;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid #CBDCEE;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-restore-task:hover {
+  background: #D8E7F5;
+  transform: scale(1.04);
+}
+
+.btn-perm-delete-task {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #F8D0D0;
+  background: #FDF2F2;
+  color: #E55353;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-perm-delete-task:hover {
+  background: #FCE4E4;
+  transform: scale(1.08);
+}
+
+.empty-trash-state {
+  text-align: center;
+  padding: 30px 10px;
+  color: #8C7A6B;
+}
+
+.empty-trash-state p {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 1.3rem;
   font-weight: 700;
+  margin: 0 0 6px 0;
+}
+
+/* Repeat Pill Style */
+.repeat-pill {
+  background: #E8F5E9 !important;
+  color: #2E7D32 !important;
+  border: 1px solid #C8E6C9;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.checkbox-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: #3E322A;
 }
 

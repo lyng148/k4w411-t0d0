@@ -280,6 +280,44 @@ function showLoginScreen() {
   });
 }
 
+let trashTasks = [];
+
+function loadTrash() {
+  const savedTrash = localStorage.getItem('todoTrash');
+  if (savedTrash) {
+    try { trashTasks = JSON.parse(savedTrash); } catch (e) { trashTasks = []; }
+  }
+  cleanupTrash();
+}
+
+function cleanupTrash() {
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  trashTasks = trashTasks.filter(t => {
+    const deletedTime = t.deletedAt ? new Date(t.deletedAt).getTime() : now;
+    return (now - deletedTime) <= SEVEN_DAYS_MS;
+  });
+  localStorage.setItem('todoTrash', JSON.stringify(trashTasks));
+  updateTrashBadge();
+}
+
+function saveTrash() {
+  localStorage.setItem('todoTrash', JSON.stringify(trashTasks));
+  updateTrashBadge();
+}
+
+function updateTrashBadge() {
+  const badge = document.getElementById('trash-badge');
+  if (badge) {
+    if (trashTasks.length > 0) {
+      badge.textContent = trashTasks.length;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
 function showTodoApp() {
   document.querySelector('#app').innerHTML = `
     <!-- Botanical Daisy Line Art Decorations -->
@@ -310,6 +348,10 @@ function showTodoApp() {
           <span class="header-date-badge">${getCurrentDateFormatted()}</span>
         </div>
         <div class="title-bar-actions">
+          <button id="trash-btn" class="action-btn" title="Thùng Rác (Xem & Khôi phục công việc đã xóa)" aria-label="Trash Bin" style="position:relative;">
+            <i data-lucide="trash-2" class="icon-rose"></i>
+            <span id="trash-badge" class="trash-badge" style="display:none;">0</span>
+          </button>
           <button id="settings-btn" class="action-btn" title="Cài đặt" aria-label="Settings">
             <i data-lucide="settings" class="icon-slate"></i>
           </button>
@@ -355,10 +397,16 @@ function showTodoApp() {
   setupLogoutButton();
   setupRefreshButton();
   
+  const trashBtn = document.getElementById('trash-btn');
+  if (trashBtn) {
+    trashBtn.addEventListener('click', () => openTrashModal());
+  }
+
   document.getElementById('btn-open-add-task').addEventListener('click', () => openTaskModal());
   document.getElementById('btn-open-add-group').addEventListener('click', () => openGroupModal());
 
   loadTasks();
+  loadTrash();
   applySavedSettings();
 
   // Fetch latest tasks & groups from server on app startup
@@ -722,7 +770,9 @@ function createTaskCardElement(task) {
   const safeText = escapeHTML(task.text);
   const priorityClass = task.priority || 'medium';
 
+  const repeatHTML = task.repeatDaily ? `<span class="task-pill repeat-pill" title="Tự động reset về chưa hoàn thành mỗi ngày lúc 0h"><i data-lucide="repeat"></i> Hàng ngày</span>` : '';
   const tagsHTML = (task.tags || []).map(tag => `<span class="task-pill">${escapeHTML(tag)}</span>`).join('');
+  const allPillsHTML = repeatHTML + tagsHTML;
 
   li.innerHTML = `
     <input type="checkbox" class="task-checkbox-custom" ${task.completed ? 'checked' : ''} aria-label="Mark task completed">
@@ -730,7 +780,7 @@ function createTaskCardElement(task) {
       <span class="task-title">${safeText}</span>
       <div class="priority-dot ${priorityClass}" title="Độ ưu tiên: ${priorityClass}"></div>
     </div>
-    ${tagsHTML ? `<div class="task-tags-row">${tagsHTML}</div>` : ''}
+    ${allPillsHTML ? `<div class="task-tags-row">${allPillsHTML}</div>` : ''}
     <div class="task-actions">
       <button class="btn-card-action btn-edit-task" title="Sửa">
         <i data-lucide="pencil" class="icon-indigo"></i>
@@ -774,7 +824,12 @@ function createTaskCardElement(task) {
         await fetch(`${API_URL}/${currentUser}/task/${task.id}`, { method: 'DELETE' });
       }
 
-      // 3. Remove locally after backend confirmation & record deleted ID to prevent resurrection
+      // 3. Move task to Trash Bin (stored for 7 days)
+      const deletedTaskCopy = { ...task, deletedAt: new Date().toISOString() };
+      trashTasks.push(deletedTaskCopy);
+      saveTrash();
+
+      // 4. Record deleted ID to prevent resurrection
       const deletedIds = JSON.parse(localStorage.getItem('todoDeletedTaskIds') || '[]');
       if (!deletedIds.includes(task.id)) {
         deletedIds.push(task.id);
@@ -784,7 +839,7 @@ function createTaskCardElement(task) {
       tasks = tasks.filter(t => t.id !== task.id);
       saveTasks();
 
-      // 4. Animate remove card from DOM
+      // 5. Animate remove card from DOM
       li.style.transform = 'scale(0.9)';
       li.style.opacity = '0';
       setTimeout(() => {
@@ -793,7 +848,7 @@ function createTaskCardElement(task) {
         } else {
           renderGroupsAndTasks();
         }
-        showToast('Đã xóa công việc', 'info');
+        showToast('Đã chuyển công việc vào Thùng Rác', 'info');
       }, 180);
     } catch (err) {
       console.error('Error deleting task on server:', err);
@@ -821,6 +876,7 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
   const taskText = existingTask ? existingTask.text : '';
   const selectedGroupId = existingTask ? existingTask.groupId : (defaultGroupId || groups[0]?.id || 'group-1');
   const priority = existingTask ? (existingTask.priority || 'medium') : 'medium';
+  const repeatDaily = existingTask ? !!existingTask.repeatDaily : false;
   const tagsStr = existingTask && existingTask.tags ? existingTask.tags.join(', ') : '';
 
   const groupOptionsHTML = groups.map(g => `<option value="${g.id}" ${g.id === selectedGroupId ? 'selected' : ''}>${escapeHTML(g.name)}</option>`).join('');
@@ -856,6 +912,12 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
             <button type="button" class="priority-btn ${priority === 'low' ? 'active' : ''}" data-priority="low">🟢 Thấp</button>
           </div>
         </div>
+        <div class="form-group" style="margin-top: 6px;">
+          <label class="checkbox-label-row">
+            <input type="checkbox" id="modal-task-repeat" ${repeatDaily ? 'checked' : ''} class="task-checkbox-custom" style="margin-top:0;">
+            <span>🔄 Lặp lại hàng ngày (Tự reset về chưa xong sau 0h)</span>
+          </label>
+        </div>
       </div>
       <div class="modal-footer">
         <button id="btn-cancel-modal" class="btn-secondary">Hủy</button>
@@ -870,6 +932,7 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
   const titleInput = document.getElementById('modal-task-title');
   const groupSelect = document.getElementById('modal-task-group');
   const tagsInput = document.getElementById('modal-task-tags');
+  const repeatInput = document.getElementById('modal-task-repeat');
   const saveBtn = document.getElementById('btn-save-modal');
   const cancelBtn = document.getElementById('btn-cancel-modal');
   const closeBtn = document.getElementById('btn-close-modal');
@@ -894,11 +957,13 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
     }
 
     const tags = tagsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+    const isRepeatDaily = repeatInput.checked;
 
     if (isEdit) {
       existingTask.text = text;
       existingTask.groupId = groupSelect.value;
       existingTask.priority = currentPriority;
+      existingTask.repeatDaily = isRepeatDaily;
       existingTask.tags = tags;
     } else {
       tasks.push({
@@ -906,7 +971,7 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
         text,
         groupId: groupSelect.value,
         completed: false,
-        repeatDaily: false,
+        repeatDaily: isRepeatDaily,
         priority: currentPriority,
         tags
       });
@@ -1008,6 +1073,115 @@ function closeModalWithAnimation(modal) {
       modal.remove();
     }
   }, 160);
+}
+
+function openTrashModal() {
+  cleanupTrash();
+  let modal = document.getElementById('trash-modal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'trash-modal';
+  modal.className = 'modal-backdrop';
+
+  const trashItemsHTML = trashTasks.length === 0
+    ? `<div class="empty-trash-state">
+         <p>🗑️ Thùng rác rỗng</p>
+         <small>Các công việc bị xóa sẽ lưu ở đây 7 ngày trước khi tự động dọn dẹp.</small>
+       </div>`
+    : trashTasks.map(task => {
+        const group = groups.find(g => g.id === task.groupId) || { name: 'Giấy nhớ' };
+        const daysLeft = task.deletedAt ? Math.max(1, 7 - Math.floor((Date.now() - new Date(task.deletedAt).getTime()) / (24 * 60 * 60 * 1000))) : 7;
+
+        return `
+          <div class="trash-item-row" data-trash-id="${task.id}">
+            <div class="trash-item-info">
+              <span class="trash-task-title">${escapeHTML(task.text)}</span>
+              <div class="trash-item-meta">
+                <span class="trash-group-pill">${escapeHTML(group.name)}</span>
+                <span class="trash-expiry-badge">Còn ${daysLeft} ngày</span>
+              </div>
+            </div>
+            <div class="trash-item-actions">
+              <button class="btn-restore-task" data-id="${task.id}" title="Khôi phục công việc">
+                <i data-lucide="refresh-cw" class="icon-indigo"></i> Khôi phục
+              </button>
+              <button class="btn-perm-delete-task" data-id="${task.id}" title="Xóa vĩnh viễn">
+                <i data-lucide="trash-2" class="icon-rose"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+  modal.innerHTML = `
+    <div class="modal-card trash-modal-card">
+      <div class="modal-header">
+        <h3>🗑️ Thùng Rác <span class="sub-header-note">(Tự dọn sau 7 ngày)</span></h3>
+        <button class="btn-modal-close" id="btn-close-trash-modal">
+          <i data-lucide="x" class="icon-slate"></i>
+        </button>
+      </div>
+      <div class="modal-body trash-body-scroll">
+        ${trashItemsHTML}
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        ${trashTasks.length > 0 ? `<button id="btn-empty-trash" class="btn-secondary" style="color: #E55353;">Dọn Sạch Thùng Rác</button>` : '<div></div>'}
+        <button id="btn-close-trash" class="btn-add-main">Đóng</button>
+      </div>
+    </div>
+  `;
+
+  document.querySelector('#app').appendChild(modal);
+  renderLucideIcons();
+
+  modal.querySelectorAll('.btn-restore-task').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tId = btn.dataset.id;
+      const targetIndex = trashTasks.findIndex(t => t.id === tId);
+      if (targetIndex !== -1) {
+        const restoredTask = trashTasks.splice(targetIndex, 1)[0];
+        delete restoredTask.deletedAt;
+
+        let deletedIds = JSON.parse(localStorage.getItem('todoDeletedTaskIds') || '[]');
+        deletedIds = deletedIds.filter(id => id !== tId);
+        localStorage.setItem('todoDeletedTaskIds', JSON.stringify(deletedIds));
+
+        tasks.push(restoredTask);
+        saveTasks();
+        saveTrash();
+        renderGroupsAndTasks();
+        showToast(`Đã khôi phục "${restoredTask.text}"`, 'success');
+        openTrashModal();
+      }
+    });
+  });
+
+  modal.querySelectorAll('.btn-perm-delete-task').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tId = btn.dataset.id;
+      trashTasks = trashTasks.filter(t => t.id !== tId);
+      saveTrash();
+      showToast('Đã xóa vĩnh viễn', 'info');
+      openTrashModal();
+    });
+  });
+
+  const emptyBtn = modal.querySelector('#btn-empty-trash');
+  if (emptyBtn) {
+    emptyBtn.addEventListener('click', () => {
+      if (confirm('Bạn có chắc chắn muốn xóa vĩnh viễn tất cả công việc trong thùng rác?')) {
+        trashTasks = [];
+        saveTrash();
+        showToast('Đã dọn sạch thùng rác', 'info');
+        openTrashModal();
+      }
+    });
+  }
+
+  document.getElementById('btn-close-trash-modal').addEventListener('click', () => closeModalWithAnimation(modal));
+  document.getElementById('btn-close-trash').addEventListener('click', () => closeModalWithAnimation(modal));
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModalWithAnimation(modal); });
 }
 
 function saveTasks() {
@@ -1172,3 +1346,26 @@ function getCurrentDate() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
+
+function checkMidnightReset() {
+  const lastSaveDate = localStorage.getItem('lastSaveDate');
+  const currentDate = getCurrentDate();
+  if (lastSaveDate && lastSaveDate !== currentDate) {
+    let resetCount = 0;
+    tasks.forEach(t => {
+      if (t.repeatDaily && t.completed) {
+        t.completed = false;
+        resetCount++;
+      }
+    });
+    if (resetCount > 0) {
+      saveTasks();
+      renderGroupsAndTasks();
+      showToast(`🌅 Đã tự động reset ${resetCount} công việc lặp lại hàng ngày!`, 'info');
+    }
+    localStorage.setItem('lastSaveDate', currentDate);
+  }
+}
+
+// Periodically check for midnight 0h reset every 60 seconds
+setInterval(checkMidnightReset, 60000);
