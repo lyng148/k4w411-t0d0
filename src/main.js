@@ -73,7 +73,8 @@ if ('serviceWorker' in navigator && !isElectron) {
 
 // API Endpoint & State
 const API_URL = 'https://k4w411-t0d0-be.vercel.app';
-let currentUser = localStorage.getItem('todoUsername');
+let currentUser = localStorage.getItem('todoUsername') || 'rin';
+localStorage.setItem('todoUsername', currentUser);
 
 const DEFAULT_GROUPS = [
   { id: 'group-1', name: 'My awesome app', theme: 'purple' },
@@ -1227,6 +1228,7 @@ async function syncTasksToServer() {
 
 async function fetchTasksFromServer() {
   try {
+    if (!currentUser) currentUser = 'rin';
     if (tasks && tasks.length > 0) {
       localStorage.setItem('todoTasks_backup', JSON.stringify(tasks));
     }
@@ -1264,6 +1266,10 @@ async function fetchTasksFromServer() {
           localStorage.setItem('todoTasks', JSON.stringify(tasks));
           localStorage.setItem('todoGroups', JSON.stringify(groups));
           localStorage.setItem('lastSaveDate', getCurrentDate());
+
+          if (!standaloneGroupId) {
+            renderGroupsAndTasks();
+          }
         } else if (tasks.length > 0) {
           // If server returned empty list BUT local tasks exist, push local tasks to server!
           syncTasksToServer();
