@@ -414,7 +414,6 @@ function toggleSettingsPanel() {
 
   const currentScale = localStorage.getItem('appScale') || '1';
   const currentFontSize = localStorage.getItem('appFontSize') || '17';
-  const currentWidthMode = localStorage.getItem('appWidthMode') || 'full';
 
   panel.innerHTML = `
     <div class="settings-content">
@@ -435,15 +434,20 @@ function toggleSettingsPanel() {
         <label>Cỡ Chữ Viết Tay: <span id="font-val">${currentFontSize}px</span></label>
         <input type="range" id="font-slider" min="14" max="22" step="1" value="${currentFontSize}">
       </div>
+      <button id="restore-backup-btn" class="btn-add-group" style="width: 100%; justify-content: center; margin-top: 4px;">
+        <i data-lucide="refresh-cw"></i> Khôi Phục Sao Lưu Local
+      </button>
       <button id="close-settings" class="btn-add-main" style="margin-top: 6px; width: 100%; justify-content: center;">Đóng</button>
     </div>
   `;
 
   document.querySelector('#app').appendChild(panel);
+  renderLucideIcons();
 
   const scaleSlider = document.getElementById('scale-slider');
   const fontSlider = document.getElementById('font-slider');
   const widthSelect = document.getElementById('width-mode-select');
+  const restoreBackupBtn = document.getElementById('restore-backup-btn');
   const closeSettings = document.getElementById('close-settings');
 
   widthSelect.addEventListener('change', (e) => {
@@ -465,6 +469,27 @@ function toggleSettingsPanel() {
     document.documentElement.style.setProperty('--app-font-size', val + 'px');
     localStorage.setItem('appFontSize', val);
   });
+
+  if (restoreBackupBtn) {
+    restoreBackupBtn.addEventListener('click', () => {
+      const backupTasks = localStorage.getItem('todoTasks_backup');
+      const backupGroups = localStorage.getItem('todoGroups_backup');
+      if (backupTasks) {
+        try {
+          tasks = JSON.parse(backupTasks);
+          if (backupGroups) groups = JSON.parse(backupGroups);
+          saveTasks();
+          renderGroupsAndTasks();
+          showToast('Đã khôi phục bản sao lưu local thành công!', 'success');
+          panel.remove();
+        } catch (e) {
+          showToast('Lỗi đọc bản sao lưu', 'error');
+        }
+      } else {
+        showToast('Chưa có bản sao lưu local', 'info');
+      }
+    });
+  }
 
   closeSettings.addEventListener('click', () => panel.remove());
 }
@@ -522,12 +547,10 @@ function setupRefreshButton() {
   });
 }
 
-// Render Groups & Tasks with Group Reordering & Pop-out Standalone Sticky Note Window
 function renderGroupsAndTasks() {
   const container = document.getElementById('groups-container');
   if (!container) return;
 
-  // Clean old SortableJS instances
   sortableInstances.forEach(inst => inst.destroy());
   sortableInstances = [];
 
@@ -609,7 +632,6 @@ function renderGroupsAndTasks() {
       });
     });
 
-    // Pop-out standalone window listener
     const popoutBtn = section.querySelector('.btn-group-popout');
     if (popoutBtn && isElectron) {
       popoutBtn.addEventListener('click', (e) => {
@@ -619,7 +641,6 @@ function renderGroupsAndTasks() {
       });
     }
 
-    // Delete group listener if present
     const deleteGroupBtn = section.querySelector('.btn-group-delete');
     if (deleteGroupBtn) {
       deleteGroupBtn.addEventListener('click', (e) => {
@@ -644,13 +665,11 @@ function renderGroupsAndTasks() {
       taskListEl.appendChild(li);
     });
 
-    // Add task listener on group header
     section.querySelector('.btn-group-add-task').addEventListener('click', (e) => {
       e.stopPropagation();
       openTaskModal(null, group.id);
     });
 
-    // Enable SortableJS for drag & drop tasks within and between groups
     const sortable = new Sortable(taskListEl, {
       group: 'shared-tasks',
       animation: 150,
@@ -669,7 +688,6 @@ function renderGroupsAndTasks() {
     sortableInstances.push(sortable);
   });
 
-  // Enable SortableJS for drag & drop reordering of GROUPS themselves!
   groupSortableInstance = new Sortable(container, {
     animation: 200,
     handle: '.group-header',
@@ -750,7 +768,6 @@ function createTaskCardElement(task) {
   return li;
 }
 
-// Modal for Adding / Editing Tasks
 function openTaskModal(existingTask = null, defaultGroupId = null) {
   let modal = document.getElementById('task-modal');
   if (modal) modal.remove();
@@ -869,7 +886,6 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
   closeBtn.addEventListener('click', () => modal.remove());
 }
 
-// Modal for Adding New Group / Sticky Note
 function openGroupModal() {
   let modal = document.getElementById('group-modal');
   if (modal) modal.remove();
@@ -942,6 +958,13 @@ function openGroupModal() {
 }
 
 function saveTasks() {
+  if (tasks && tasks.length > 0) {
+    localStorage.setItem('todoTasks_backup', JSON.stringify(tasks));
+  }
+  if (groups && groups.length > 0) {
+    localStorage.setItem('todoGroups_backup', JSON.stringify(groups));
+  }
+
   localStorage.setItem('todoTasks', JSON.stringify(tasks));
   localStorage.setItem('todoGroups', JSON.stringify(groups));
   localStorage.setItem('lastSaveDate', getCurrentDate());
@@ -960,6 +983,7 @@ async function syncTasksToServer() {
   const payload = {
     user: currentUser,
     listTask: tasks.map(t => ({
+      id: t.id,
       content: t.text,
       isDone: t.completed,
       isRepeated: t.repeatDaily,
@@ -986,25 +1010,55 @@ async function syncTasksToServer() {
 
 async function fetchTasksFromServer() {
   try {
+    if (tasks && tasks.length > 0) {
+      localStorage.setItem('todoTasks_backup', JSON.stringify(tasks));
+    }
+    if (groups && groups.length > 0) {
+      localStorage.setItem('todoGroups_backup', JSON.stringify(groups));
+    }
+
     const response = await fetch(`${API_URL}/${currentUser}`);
     if (response.ok) {
       const data = await response.json();
+
       if (data.listTask && Array.isArray(data.listTask)) {
-        tasks = data.listTask.map((task, idx) => ({
-          id: task.id || 'task-' + idx + '-' + Date.now(),
-          text: task.content,
-          completed: task.isDone,
-          repeatDaily: task.isRepeated,
-          groupId: task.groupId || DEFAULT_GROUPS[0].id,
-          priority: task.priority || 'medium',
-          tags: task.tags || []
-        }));
-        if (data.groups && Array.isArray(data.groups) && data.groups.length > 0) {
-          groups = data.groups;
+        if (data.listTask.length > 0) {
+          const serverTasks = data.listTask.map((task, idx) => ({
+            id: task.id || 'task-' + idx + '-' + Date.now(),
+            text: task.content,
+            completed: task.isDone,
+            repeatDaily: task.isRepeated,
+            groupId: task.groupId || DEFAULT_GROUPS[0].id,
+            priority: task.priority || 'medium',
+            tags: task.tags || []
+          }));
+
+          // Smart Merge: Merge server tasks with local tasks by ID
+          const mergedTasks = [...serverTasks];
+          tasks.forEach(localTask => {
+            if (!mergedTasks.some(st => st.id === localTask.id)) {
+              mergedTasks.push(localTask);
+            }
+          });
+          tasks = mergedTasks;
+
+          if (data.groups && Array.isArray(data.groups) && data.groups.length > 0) {
+            const mergedGroups = [...data.groups];
+            groups.forEach(localGroup => {
+              if (!mergedGroups.some(sg => sg.id === localGroup.id)) {
+                mergedGroups.push(localGroup);
+              }
+            });
+            groups = mergedGroups;
+          }
+
+          localStorage.setItem('todoTasks', JSON.stringify(tasks));
+          localStorage.setItem('todoGroups', JSON.stringify(groups));
+          localStorage.setItem('lastSaveDate', getCurrentDate());
+        } else if (tasks.length > 0) {
+          // If server returned empty list BUT local tasks exist, push local tasks to server!
+          syncTasksToServer();
         }
-        localStorage.setItem('todoTasks', JSON.stringify(tasks));
-        localStorage.setItem('todoGroups', JSON.stringify(groups));
-        localStorage.setItem('lastSaveDate', getCurrentDate());
       }
     }
   } catch (error) {
