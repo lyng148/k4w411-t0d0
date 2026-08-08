@@ -918,13 +918,14 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
     } else {
       renderGroupsAndTasks();
     }
-    modal.remove();
+    closeModalWithAnimation(modal);
   };
 
   saveBtn.addEventListener('click', handleSave);
   titleInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSave(); });
-  cancelBtn.addEventListener('click', () => modal.remove());
-  closeBtn.addEventListener('click', () => modal.remove());
+  cancelBtn.addEventListener('click', () => closeModalWithAnimation(modal));
+  closeBtn.addEventListener('click', () => closeModalWithAnimation(modal));
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModalWithAnimation(modal); });
 }
 
 function openGroupModal() {
@@ -989,13 +990,24 @@ function openGroupModal() {
     localStorage.setItem('todoGroups', JSON.stringify(groups));
     saveTasks();
     renderGroupsAndTasks();
-    modal.remove();
+    closeModalWithAnimation(modal);
   };
 
   saveBtn.addEventListener('click', handleSave);
   nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSave(); });
-  document.getElementById('btn-cancel-gmodal').addEventListener('click', () => modal.remove());
-  document.getElementById('btn-close-gmodal').addEventListener('click', () => modal.remove());
+  document.getElementById('btn-cancel-gmodal').addEventListener('click', () => closeModalWithAnimation(modal));
+  document.getElementById('btn-close-gmodal').addEventListener('click', () => closeModalWithAnimation(modal));
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModalWithAnimation(modal); });
+}
+
+function closeModalWithAnimation(modal) {
+  if (!modal) return;
+  modal.classList.add('is-closing');
+  setTimeout(() => {
+    if (modal && modal.parentNode) {
+      modal.remove();
+    }
+  }, 160);
 }
 
 function saveTasks() {
