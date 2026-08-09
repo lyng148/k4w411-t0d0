@@ -77,12 +77,24 @@ let currentUser = (localStorage.getItem('todoUsername') || 'rin').trim().toLower
 localStorage.setItem('todoUsername', currentUser);
 
 const DEFAULT_GROUPS = [
-  { id: 'group-1', name: 'My awesome app', theme: 'purple' },
-  { id: 'group-2', name: 'Home', theme: 'blue' }
+  { id: 'group-tieng-nhat', name: 'HỌC TIẾNG NHẬT 🇯🇵', theme: 'green' },
+  { id: 'group-do-an', name: 'RINGO & PAPER 🎓', theme: 'purple' },
+  { id: 'group-ca-nhan', name: 'CÁ NHÂN & CÔNG VIỆC 🌸', theme: 'sand' }
+];
+
+const DEFAULT_TASKS = [
+  { id: 'task-rin-1-1786214778874', text: 'Shadowing', groupId: 'group-tieng-nhat', completed: false, priority: 'high', tags: ['Tiếng Nhật', 'N3/N2'] },
+  { id: 'task-rin-2-1786214779075', text: 'Học từ vựng Anki mỗi ngày', groupId: 'group-tieng-nhat', completed: false, priority: 'high', tags: ['Anki', 'Từ vựng'] },
+  { id: 'task-1786215599916-ydf9', text: 'Đọc báo', groupId: 'group-tieng-nhat', completed: false, priority: 'medium', tags: [] },
+  { id: 'task-rin-5-1786214779250', text: 'Thực hiện check ver 1 paper + Check kế hoạch kiểm thử BT2', groupId: 'group-do-an', completed: false, priority: 'high', tags: ['Đồ án'] },
+  { id: 'task-1786215526983-sgnj', text: 'Làm task GTM + bổ sung học liệu', groupId: 'group-do-an', completed: false, priority: 'medium', tags: [] },
+  { id: 'task-rin-12-1786214779661', text: 'Làm checklist giấy tờ COE', groupId: 'group-ca-nhan', completed: false, priority: 'medium', tags: ['Thủ tục'] },
+  { id: 'task-1786215700853-y5c8', text: 'Có thể là học thêm RAG + AWS', groupId: 'group-ca-nhan', completed: false, priority: 'medium', tags: [] },
+  { id: 'task-1786215715575-8nv4', text: 'Maxxing', groupId: 'group-ca-nhan', completed: false, priority: 'medium', tags: [] }
 ];
 
 let groups = JSON.parse(localStorage.getItem('todoGroups') || 'null') || DEFAULT_GROUPS;
-let tasks = [];
+let tasks = JSON.parse(localStorage.getItem('todoTasks') || 'null') || DEFAULT_TASKS;
 let sortableInstances = [];
 let groupSortableInstance = null;
 let syncTimeout = null;
@@ -1323,20 +1335,15 @@ function loadTasks() {
         saveTasks();
       }
     } catch (e) {
-      tasks = [];
+      tasks = DEFAULT_TASKS;
     }
   } else {
-    // Sample tasks matching uploaded reference image
-    tasks = [
-      { id: 't1', text: 'Move drafts in Figma', groupId: groups[0]?.id || 'group-1', completed: false, priority: 'high', tags: ['admin', 'low-energy', 'quick'] },
-      { id: 't2', text: 'Create a first draft for pricing', groupId: groups[0]?.id || 'group-1', completed: false, priority: 'medium', tags: ['design', 'personal', '2h'] },
-      { id: 't3', text: 'Check a letter from a test user', groupId: groups[0]?.id || 'group-1', completed: false, priority: 'medium', tags: [] },
-      { id: 't4', text: 'Buy tablets for dishwasher', groupId: groups[1]?.id || 'group-2', completed: false, priority: 'medium', tags: [] },
-      { id: 't5', text: 'Clean up windows', groupId: groups[1]?.id || 'group-2', completed: false, priority: 'low', tags: ['frog', '3h'] },
-      { id: 't6', text: 'Groceries', groupId: groups[1]?.id || 'group-2', completed: false, priority: 'low', tags: [] },
-      { id: 't7', text: 'Replace battery in clock (kitchen)', groupId: groups[1]?.id || 'group-2', completed: false, priority: 'low', tags: [] }
-    ];
+    tasks = DEFAULT_TASKS;
     saveTasks();
+  }
+
+  if (!tasks || tasks.length === 0) {
+    tasks = DEFAULT_TASKS;
   }
 
   if (!standaloneGroupId) {
