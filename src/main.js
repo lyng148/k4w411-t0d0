@@ -95,6 +95,7 @@ const DEFAULT_TASKS = [
 
 let groups = (() => { try { const g = JSON.parse(localStorage.getItem('todoGroups')); return (Array.isArray(g) && g.length > 0) ? g : DEFAULT_GROUPS; } catch(e) { return DEFAULT_GROUPS; } })();
 let tasks = (() => { try { const t = JSON.parse(localStorage.getItem('todoTasks')); return (Array.isArray(t) && t.length > 0) ? t : DEFAULT_TASKS; } catch(e) { return DEFAULT_TASKS; } })();
+let trashTasks = [];
 let sortableInstances = [];
 let groupSortableInstance = null;
 let syncTimeout = null;
@@ -140,7 +141,6 @@ function showToast(message, type = 'info') {
 
 // App Initialization
 if (standaloneGroupId) {
-  // Standalone Floating Desktop Sticky Note Mode
   initStandaloneNoteMode();
 } else if (!currentUser) {
   showLoginScreen();
@@ -296,7 +296,7 @@ function showLoginScreen() {
   });
 }
 
-let trashTasks = [];
+// trashTasks declared at top of file with other state variables
 
 function loadTrash() {
   const savedTrash = localStorage.getItem('todoTrash');
@@ -424,12 +424,12 @@ function showTodoApp() {
   loadTasks();
   loadTrash();
   applySavedSettings();
-
-  // Always render immediately with whatever local data we have
   renderGroupsAndTasks();
 
-  // Then fetch from server in background and re-render when done
-  fetchTasksFromServer();
+  // Fetch from server in background, then sync local groups back
+  fetchTasksFromServer().then(() => {
+    syncTasksToServer();
+  });
 }
 
 function setupCloseButton() {
@@ -1271,7 +1271,8 @@ async function fetchTasksFromServer() {
           // Use server tasks directly as ground truth
           tasks = serverTasks;
 
-          if (data.groups && Array.isArray(data.groups) && data.groups.length > 0) {
+          const savedGroupsRaw = localStorage.getItem('todoGroups');
+          if (!savedGroupsRaw && data.groups && Array.isArray(data.groups) && data.groups.length > 0) {
             groups = data.groups.map(g => ({
               id: g.id,
               name: g.name,
@@ -1282,6 +1283,9 @@ async function fetchTasksFromServer() {
           localStorage.setItem('todoTasks', JSON.stringify(tasks));
           localStorage.setItem('todoGroups', JSON.stringify(groups));
           localStorage.setItem('lastSaveDate', getCurrentDate());
+
+          // Push active groups and tasks to server to keep server updated
+          syncTasksToServer();
 
           if (!standaloneGroupId) {
             renderGroupsAndTasks();
