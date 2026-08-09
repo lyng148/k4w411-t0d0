@@ -73,8 +73,8 @@ if ('serviceWorker' in navigator && !isElectron) {
 
 // API Endpoint & State
 const API_URL = 'https://k4w411-t0d0-be.vercel.app';
-let currentUser = (localStorage.getItem('todoUsername') || 'rin').trim().toLowerCase();
-localStorage.setItem('todoUsername', currentUser);
+const savedUsername = localStorage.getItem('todoUsername');
+let currentUser = savedUsername ? savedUsername.trim().toLowerCase() : null;
 
 const DEFAULT_GROUPS = [
   { id: 'group-tieng-nhat', name: 'HỌC TIẾNG NHẬT 🇯🇵', theme: 'green' },
