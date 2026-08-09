@@ -821,11 +821,13 @@ function createTaskCardElement(task) {
 
   li.innerHTML = `
     <input type="checkbox" class="task-checkbox-custom" ${task.completed ? 'checked' : ''} aria-label="Mark task completed">
-    <div class="task-content-block">
-      <div class="priority-dot ${priorityClass}" title="Độ ưu tiên: ${priorityClass}"></div>
-      <span class="task-title">${safeText}</span>
+    <div class="task-main-wrapper">
+      <div class="task-content-block">
+        <div class="priority-dot ${priorityClass}" title="Độ ưu tiên: ${priorityClass}"></div>
+        <span class="task-title">${safeText}</span>
+      </div>
+      ${allPillsHTML ? `<div class="task-tags-row">${allPillsHTML}</div>` : ''}
     </div>
-    ${allPillsHTML ? `<div class="task-tags-row">${allPillsHTML}</div>` : ''}
     <div class="task-actions">
       <button class="btn-card-action btn-edit-task" title="Sửa công việc">
         <i data-lucide="pencil" class="icon-indigo"></i>

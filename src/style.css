@@ -661,19 +661,27 @@ body.is-standalone .floral-bg-bottom {
   font-family: sans-serif;
 }
 
-.task-content-block {
+.task-main-wrapper {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.task-content-block {
+  display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
 }
 
 .task-title {
   font-family: 'Mali', 'Patrick Hand', cursive;
   font-weight: 600;
   font-size: 1.05rem;
-  line-height: 32px;
+  line-height: 1.35;
   color: #3E322A;
   word-break: break-word;
   flex: 1;
