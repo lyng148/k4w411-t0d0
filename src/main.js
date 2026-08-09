@@ -20,7 +20,10 @@ import {
   CheckSquare,
   FolderPlus,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Calendar,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide';
 
 function renderLucideIcons() {
@@ -44,7 +47,10 @@ function renderLucideIcons() {
       CheckSquare,
       FolderPlus,
       Clock,
-      ExternalLink
+      ExternalLink,
+      Calendar,
+      ChevronLeft,
+      ChevronRight
     }
   });
 }
@@ -364,6 +370,9 @@ function showTodoApp() {
           <span class="header-date-badge">${getCurrentDateFormatted()}</span>
         </div>
         <div class="title-bar-actions">
+          <button id="calendar-btn" class="action-btn" title="Lịch Công Việc (Xem công việc theo lịch)" aria-label="Calendar View">
+            <i data-lucide="calendar" class="icon-indigo"></i>
+          </button>
           <button id="trash-btn" class="action-btn" title="Thùng Rác (Xem & Khôi phục công việc đã xóa)" aria-label="Trash Bin" style="position:relative;">
             <i data-lucide="trash-2" class="icon-rose"></i>
             <span id="trash-badge" class="trash-badge" style="display:none;">0</span>
@@ -413,6 +422,11 @@ function showTodoApp() {
   setupLogoutButton();
   setupRefreshButton();
   
+  const calendarBtn = document.getElementById('calendar-btn');
+  if (calendarBtn) {
+    calendarBtn.addEventListener('click', () => openCalendarModal());
+  }
+
   const trashBtn = document.getElementById('trash-btn');
   if (trashBtn) {
     trashBtn.addEventListener('click', () => openTrashModal());
@@ -790,9 +804,20 @@ function createTaskCardElement(task) {
   const safeText = escapeHTML(task.text);
   const priorityClass = task.priority || 'medium';
 
+  let deadlineHTML = '';
+  if (task.deadline) {
+    const d = new Date(task.deadline);
+    if (!isNaN(d.getTime())) {
+      const isOverdue = !task.completed && d.getTime() < Date.now();
+      const pad = n => String(n).padStart(2, '0');
+      const formattedDate = `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      deadlineHTML = `<span class="deadline-pill ${isOverdue ? 'deadline-overdue' : ''}" title="${isOverdue ? 'Đã Quá Hạn!' : 'Hạn Chót'}"><i data-lucide="clock"></i> ${formattedDate}</span>`;
+    }
+  }
+
   const repeatHTML = task.repeatDaily ? `<span class="task-pill repeat-pill" title="Tự động reset về chưa hoàn thành mỗi ngày lúc 0h"><i data-lucide="repeat"></i> Hàng ngày</span>` : '';
   const tagsHTML = (task.tags || []).map(tag => `<span class="task-pill">${escapeHTML(tag)}</span>`).join('');
-  const allPillsHTML = repeatHTML + tagsHTML;
+  const allPillsHTML = deadlineHTML + repeatHTML + tagsHTML;
 
   li.innerHTML = `
     <input type="checkbox" class="task-checkbox-custom" ${task.completed ? 'checked' : ''} aria-label="Mark task completed">
@@ -922,6 +947,10 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
             <button type="button" class="priority-btn ${priority === 'low' ? 'active' : ''}" data-priority="low">🟢 Thấp</button>
           </div>
         </div>
+        <div class="form-group">
+          <label>Hạn Chót (Deadline)</label>
+          <input type="datetime-local" id="modal-task-deadline" class="form-input" value="${existingTask && existingTask.deadline ? existingTask.deadline : ''}" />
+        </div>
         <div class="form-group" style="margin-top: 6px;">
           <label class="checkbox-label-row">
             <input type="checkbox" id="modal-task-repeat" ${repeatDaily ? 'checked' : ''} class="task-checkbox-custom" style="margin-top:0;">
@@ -968,12 +997,14 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
 
     const tags = tagsInput.value.split(',').map(s => s.trim()).filter(Boolean);
     const isRepeatDaily = repeatInput.checked;
+    const deadlineVal = document.getElementById('modal-task-deadline').value;
 
     if (isEdit) {
       existingTask.text = text;
       existingTask.groupId = groupSelect.value;
       existingTask.priority = currentPriority;
       existingTask.repeatDaily = isRepeatDaily;
+      existingTask.deadline = deadlineVal;
       existingTask.tags = tags;
     } else {
       tasks.push({
@@ -982,6 +1013,7 @@ function openTaskModal(existingTask = null, defaultGroupId = null) {
         groupId: groupSelect.value,
         completed: false,
         repeatDaily: isRepeatDaily,
+        deadline: deadlineVal,
         priority: currentPriority,
         tags
       });
@@ -1224,6 +1256,7 @@ async function syncTasksToServer() {
       content: t.text,
       isDone: t.completed,
       isRepeated: t.repeatDaily,
+      deadline: t.deadline || '',
       groupId: t.groupId,
       priority: t.priority,
       tags: t.tags
@@ -1266,6 +1299,7 @@ async function fetchTasksFromServer() {
             text: task.content,
             completed: task.isDone,
             repeatDaily: task.isRepeated,
+            deadline: task.deadline || '',
             groupId: task.groupId || DEFAULT_GROUPS[0].id,
             priority: task.priority || 'medium',
             tags: task.tags || []
@@ -1380,3 +1414,212 @@ function checkMidnightReset() {
 
 // Periodically check for midnight 0h reset every 60 seconds
 setInterval(checkMidnightReset, 60000);
+
+function openCalendarModal(year = null, month = null, targetDateStr = null) {
+  let modal = document.getElementById('calendar-modal');
+  if (modal) modal.remove();
+
+  const now = new Date();
+  const currentYear = year !== null ? year : now.getFullYear();
+  const currentMonth = month !== null ? month : now.getMonth();
+
+  modal = document.createElement('div');
+  modal.id = 'calendar-modal';
+  modal.className = 'modal-backdrop';
+
+  const monthNames = [
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+  ];
+
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  let selectedDateStr = targetDateStr || todayStr;
+
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+
+  let startDayOfWeek = firstDayOfMonth.getDay() - 1;
+  if (startDayOfWeek < 0) startDayOfWeek = 6;
+
+  const totalDaysInMonth = lastDayOfMonth.getDate();
+  const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+
+  let daysHTML = '';
+
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const dNum = prevMonthLastDay - i;
+    daysHTML += `<div class="calendar-day-cell other-month"><span class="calendar-day-num">${dNum}</span></div>`;
+  }
+
+  for (let d = 1; d <= totalDaysInMonth; d++) {
+    const monthStr = String(currentMonth + 1).padStart(2, '0');
+    const dayStr = String(d).padStart(2, '0');
+    const dateKey = `${currentYear}-${monthStr}-${dayStr}`;
+
+    const isToday = dateKey === todayStr;
+    const isSelected = dateKey === selectedDateStr;
+
+    const dayTasks = tasks.filter(t => {
+      if (t.repeatDaily) return true;
+      if (t.deadline && t.deadline.startsWith(dateKey)) return true;
+      return false;
+    });
+
+    let dotsHTML = '';
+    if (dayTasks.length > 0) {
+      dotsHTML = `<div class="calendar-day-dots">`;
+      const hasHigh = dayTasks.some(t => t.priority === 'high');
+      const hasMedium = dayTasks.some(t => t.priority === 'medium');
+      const hasLow = dayTasks.some(t => t.priority === 'low');
+      const hasRepeat = dayTasks.some(t => t.repeatDaily);
+
+      if (hasRepeat) dotsHTML += `<span class="calendar-task-dot dot-repeat" title="Lặp lại hàng ngày"></span>`;
+      if (hasHigh) dotsHTML += `<span class="calendar-task-dot dot-high" title="Ưu tiên cao"></span>`;
+      if (hasMedium) dotsHTML += `<span class="calendar-task-dot dot-medium" title="Ưu tiên vừa"></span>`;
+      if (hasLow && !hasHigh) dotsHTML += `<span class="calendar-task-dot dot-low" title="Ưu tiên thấp"></span>`;
+      dotsHTML += `</div>`;
+    }
+
+    daysHTML += `
+      <div class="calendar-day-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" data-date="${dateKey}">
+        <span class="calendar-day-num">${d}</span>
+        ${dotsHTML}
+      </div>
+    `;
+  }
+
+  modal.innerHTML = `
+    <div class="calendar-modal-card">
+      <div class="calendar-header-nav">
+        <h3><i data-lucide="calendar" class="icon-indigo"></i> Lịch Công Việc</h3>
+        <button class="btn-modal-close" id="btn-close-calendar">
+          <i data-lucide="x" class="icon-slate"></i>
+        </button>
+      </div>
+
+      <div class="calendar-header-nav" style="margin-top: 4px;">
+        <button class="action-btn" id="btn-prev-month" title="Tháng trước">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <span class="calendar-month-title">${monthNames[currentMonth]} ${currentYear}</span>
+        <button class="action-btn" id="btn-next-month" title="Tháng sau">
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="calendar-weekdays-grid">
+        <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+      </div>
+
+      <div class="calendar-days-grid" id="calendar-days-container">
+        ${daysHTML}
+      </div>
+
+      <div class="calendar-day-tasks-section" id="calendar-tasks-section">
+      </div>
+    </div>
+  `;
+
+  document.querySelector('#app').appendChild(modal);
+  renderLucideIcons();
+
+  const closeBtn = document.getElementById('btn-close-calendar');
+  closeBtn.addEventListener('click', () => closeModalWithAnimation(modal));
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModalWithAnimation(modal); });
+
+  document.getElementById('btn-prev-month').addEventListener('click', () => {
+    let newMonth = currentMonth - 1;
+    let newYear = currentYear;
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear--;
+    }
+    openCalendarModal(newYear, newMonth, selectedDateStr);
+  });
+
+  document.getElementById('btn-next-month').addEventListener('click', () => {
+    let newMonth = currentMonth + 1;
+    let newYear = currentYear;
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear++;
+    }
+    openCalendarModal(newYear, newMonth, selectedDateStr);
+  });
+
+  const renderCalendarDayTasks = (dateStr) => {
+    selectedDateStr = dateStr;
+    modal.querySelectorAll('.calendar-day-cell').forEach(cell => {
+      cell.classList.toggle('is-selected', cell.dataset.date === dateStr);
+    });
+
+    const tasksSection = document.getElementById('calendar-tasks-section');
+    if (!tasksSection) return;
+
+    const matchedTasks = tasks.filter(t => {
+      if (t.repeatDaily) return true;
+      if (t.deadline && t.deadline.startsWith(dateStr)) return true;
+      return false;
+    });
+
+    const [y, m, d] = dateStr.split('-');
+    const formattedTitle = `Công Việc Ngày ${d}/${m}/${y} (${matchedTasks.length})`;
+
+    if (matchedTasks.length === 0) {
+      tasksSection.innerHTML = `
+        <h4 class="calendar-day-tasks-title">${formattedTitle}</h4>
+        <div style="font-family: 'Patrick Hand', cursive; color: #8C7A6B; font-size: 1rem; text-align: center; padding: 10px;">
+          Không có công việc nào trong ngày này 🌸
+        </div>
+      `;
+    } else {
+      const itemsHTML = matchedTasks.map(t => {
+        const group = groups.find(g => g.id === t.groupId);
+        const groupName = group ? group.name : '';
+        const priorityDot = t.priority === 'high' ? '🔴' : (t.priority === 'low' ? '🟢' : '🟡');
+        const repeatPill = t.repeatDaily ? ' 🔄 Hàng ngày' : '';
+        const timeStr = t.deadline ? t.deadline.split('T')[1] || '' : '';
+
+        return `
+          <div class="calendar-task-item ${t.completed ? 'completed' : ''}" data-task-id="${t.id}">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>${priorityDot}</span>
+              <span>${escapeHTML(t.text)}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #8C7A6B;">
+              ${timeStr ? `<span>⏰ ${timeStr}</span>` : ''}
+              ${repeatPill ? `<span>${repeatPill}</span>` : ''}
+              <span class="task-pill" style="font-size: 0.75rem;">${escapeHTML(groupName)}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      tasksSection.innerHTML = `
+        <h4 class="calendar-day-tasks-title">${formattedTitle}</h4>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          ${itemsHTML}
+        </div>
+      `;
+
+      tasksSection.querySelectorAll('.calendar-task-item').forEach(itemEl => {
+        itemEl.addEventListener('click', () => {
+          const tId = itemEl.dataset.taskId;
+          const foundTask = tasks.find(t => t.id === tId);
+          if (foundTask) {
+            closeModalWithAnimation(modal);
+            openTaskModal(foundTask);
+          }
+        });
+      });
+    }
+  };
+
+  modal.querySelectorAll('.calendar-day-cell[data-date]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      renderCalendarDayTasks(cell.dataset.date);
+    });
+  });
+
+  renderCalendarDayTasks(selectedDateStr);
+}
