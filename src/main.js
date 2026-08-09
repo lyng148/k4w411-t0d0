@@ -484,6 +484,7 @@ function toggleSettingsPanel() {
 
   const currentScale = localStorage.getItem('appScale') || '1';
   const currentFontSize = localStorage.getItem('appFontSize') || '17';
+  const currentWidthMode = localStorage.getItem('appWidthMode') || 'full';
 
   panel.innerHTML = `
     <div class="settings-content">
