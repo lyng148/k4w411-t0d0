@@ -93,8 +93,8 @@ const DEFAULT_TASKS = [
   { id: 'task-1786215715575-8nv4', text: 'Maxxing', groupId: 'group-ca-nhan', completed: false, priority: 'medium', tags: [] }
 ];
 
-let groups = JSON.parse(localStorage.getItem('todoGroups') || 'null') || DEFAULT_GROUPS;
-let tasks = JSON.parse(localStorage.getItem('todoTasks') || 'null') || DEFAULT_TASKS;
+let groups = (() => { try { const g = JSON.parse(localStorage.getItem('todoGroups')); return (Array.isArray(g) && g.length > 0) ? g : DEFAULT_GROUPS; } catch(e) { return DEFAULT_GROUPS; } })();
+let tasks = (() => { try { const t = JSON.parse(localStorage.getItem('todoTasks')); return (Array.isArray(t) && t.length > 0) ? t : DEFAULT_TASKS; } catch(e) { return DEFAULT_TASKS; } })();
 let sortableInstances = [];
 let groupSortableInstance = null;
 let syncTimeout = null;
@@ -425,23 +425,11 @@ function showTodoApp() {
   loadTrash();
   applySavedSettings();
 
-  const container = document.getElementById('groups-container');
-  if (container && (!tasks || tasks.length === 0)) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px 20px; color: #8C7A6B; font-family: 'Patrick Hand', cursive; font-size: 1.25rem;">
-        <i data-lucide="refresh-cw" class="icon-indigo spinning" style="font-size: 1.6rem; display: inline-block; margin-bottom: 8px;"></i>
-        <div>Đang đồng bộ dữ liệu từ máy chủ...</div>
-      </div>
-    `;
-    renderLucideIcons();
-  } else {
-    renderGroupsAndTasks();
-  }
+  // Always render immediately with whatever local data we have
+  renderGroupsAndTasks();
 
-  // Fetch latest tasks & groups from server on app startup
-  fetchTasksFromServer().then(() => {
-    renderGroupsAndTasks();
-  });
+  // Then fetch from server in background and re-render when done
+  fetchTasksFromServer();
 }
 
 function setupCloseButton() {
@@ -1317,37 +1305,44 @@ function loadTasks() {
   const lastSaveDate = localStorage.getItem('lastSaveDate');
   const currentDate = getCurrentDate();
 
+  // Parse groups — must be non-empty array, otherwise use defaults
   if (savedGroups) {
-    try { groups = JSON.parse(savedGroups); } catch (e) {}
+    try {
+      const parsed = JSON.parse(savedGroups);
+      groups = (Array.isArray(parsed) && parsed.length > 0) ? parsed : DEFAULT_GROUPS;
+    } catch (e) {
+      groups = DEFAULT_GROUPS;
+    }
+  } else {
+    groups = DEFAULT_GROUPS;
   }
-  if (!groups || groups.length === 0) groups = DEFAULT_GROUPS;
 
+  // Parse tasks — must be non-empty array, otherwise use defaults
   if (savedTasks) {
     try {
-      tasks = JSON.parse(savedTasks);
-      const isNewDay = lastSaveDate !== currentDate;
-
-      if (isNewDay) {
-        tasks.forEach(t => {
-          if (t.repeatDaily) t.completed = false;
-        });
-        localStorage.setItem('lastSaveDate', currentDate);
+      const parsed = JSON.parse(savedTasks);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        tasks = parsed;
+        const isNewDay = lastSaveDate !== currentDate;
+        if (isNewDay) {
+          tasks.forEach(t => {
+            if (t.repeatDaily) t.completed = false;
+          });
+          localStorage.setItem('lastSaveDate', currentDate);
+          saveTasks();
+        }
+      } else {
+        // localStorage has empty array "[]" — use defaults
+        tasks = DEFAULT_TASKS;
         saveTasks();
       }
     } catch (e) {
       tasks = DEFAULT_TASKS;
+      saveTasks();
     }
   } else {
     tasks = DEFAULT_TASKS;
     saveTasks();
-  }
-
-  if (!tasks || tasks.length === 0) {
-    tasks = DEFAULT_TASKS;
-  }
-
-  if (!standaloneGroupId) {
-    renderGroupsAndTasks();
   }
 }
 
