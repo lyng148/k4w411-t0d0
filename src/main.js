@@ -501,8 +501,8 @@ function toggleSettingsPanel() {
         <input type="range" id="scale-slider" min="0.75" max="1.3" step="0.05" value="${currentScale}">
       </div>
       <div class="setting-item">
-        <label>Cỡ Chữ Viết Tay: <span id="font-val">${currentFontSize}px</span></label>
-        <input type="range" id="font-slider" min="14" max="22" step="1" value="${currentFontSize}">
+        <label>Cỡ Chữ Giao Diện: <span id="font-val">${currentFontSize}px</span></label>
+        <input type="range" id="font-slider" min="13" max="24" step="1" value="${currentFontSize}">
       </div>
       <button id="restore-backup-btn" class="btn-add-group" style="width: 100%; justify-content: center; margin-top: 4px;">
         <i data-lucide="refresh-cw"></i> Khôi Phục Sao Lưu Local
@@ -536,6 +536,7 @@ function toggleSettingsPanel() {
   fontSlider.addEventListener('input', (e) => {
     const val = e.target.value;
     document.getElementById('font-val').textContent = val + 'px';
+    document.documentElement.style.fontSize = val + 'px';
     document.documentElement.style.setProperty('--app-font-size', val + 'px');
     localStorage.setItem('appFontSize', val);
   });
@@ -582,6 +583,7 @@ function applySavedSettings() {
   const widthMode = localStorage.getItem('appWidthMode') || 'full';
   document.documentElement.style.setProperty('--app-scale', scale);
   document.documentElement.style.setProperty('--app-font-size', fontSize + 'px');
+  document.documentElement.style.fontSize = fontSize + 'px';
   applyWidthMode(widthMode);
 }
 
